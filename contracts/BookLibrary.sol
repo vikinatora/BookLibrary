@@ -6,73 +6,80 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BookLibrary is Ownable {
-    Book[] private books;
-    
-    mapping(bytes32 => bool) userBooks;
-    
+    bytes32[] private booksIds;
+    mapping(bytes32 => Book) public books;
+    mapping(bytes32 => bool) private userBorrowedBooks;
+    mapping(bytes32 => mapping (address => bool)) private hasUserBorrowedBefore;
+
     struct Book {
         string name;
         uint8 copies;
         address[] borrowers;
+        bool exists;
     }
     
-    
-    function addBook (string memory _name, uint8 _copies) external onlyOwner {
-        address[] memory borrowers;
-        
-        books.push(Book(_name, _copies, borrowers));
+    modifier bookShouldExist(string memory _name, bool shouldExist) {
+        bytes32 encodedName = keccak256(abi.encodePacked(_name));
+        if (shouldExist) {
+          require(books[encodedName].exists == true, "Book doesn't exist!");
+        } else {
+          require(books[encodedName].exists == false, "Book already exists!");
+        }
+        _;
     }
-    
-    function addCopies(uint _bookId, uint8 _copies) external onlyOwner {
-        books[_bookId].copies += _copies;
-    }
-    
-    function borrowBook(uint _bookId) external {
-        //Books must exists
-        require(_bookId < books.length, "Book doesn't exist");
-        
-        Book storage book = books[_bookId]; 
 
-        // User can't borrow books with no copies left;
+    function addBook (string memory _name, uint8 _copies) external onlyOwner bookShouldExist(_name, false) {
+        bytes32 encodedName = keccak256(abi.encodePacked(_name));
+
+        address[] memory borrowers;
+        Book memory newBook = Book(_name, _copies, borrowers, true);
+        booksIds.push(encodedName);
+        books[encodedName] = newBook;
+    }
+    
+    function addCopies(string memory _bookName, uint8 _copies) external onlyOwner bookShouldExist(_bookName, true) {
+        bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
+        books[encodedName].copies += _copies;
+    }
+    
+    function borrowBook(string memory _bookName) external bookShouldExist(_bookName, true){    
+        bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
+        Book storage book = books[encodedName]; 
+
+        // User can't borrow booksArray with no copies left;
         require(book.copies > 0, "No more copies left");
     
         // User shouldn't borrow the same book more than once;
-        bytes32 hash = keccak256(abi.encodePacked(msg.sender, _bookId));
-        require(userBooks[hash] == false, "You've already borrowed the book");
+        bytes32 hash = keccak256(abi.encodePacked(msg.sender, _bookName));
+        require(userBorrowedBooks[hash] == false, "You've already borrowed the book");
         
-        userBooks[hash] = true;
+        userBorrowedBooks[hash] = true;
         book.copies--;
-        
-        bool hasBorrowedBefore = false;
-        for (uint i = 0; i < book.borrowers.length; i++) {
-            if (book.borrowers[i] == msg.sender) {
-                hasBorrowedBefore = true;
-                break;
-            }
-        }
-        
-        if (!hasBorrowedBefore) {
+        if (hasUserBorrowedBefore[encodedName][msg.sender] == false) {
             book.borrowers.push(msg.sender);
+            hasUserBorrowedBefore[encodedName][msg.sender] = true;
         }
-    
     }
     
-    function returnBook(uint _bookId) external {
+    function returnBook(string memory _bookName) external bookShouldExist(_bookName, true) {
         //Check if user has borrowed this book;
-        bytes32 hash = keccak256(abi.encodePacked(msg.sender, _bookId));
-        require(userBooks[hash] == true, "You can't return a book that you haven't borrowed");
+        bytes32 hash = keccak256(abi.encodePacked(msg.sender, _bookName));
+        require(userBorrowedBooks[hash] == true, "You can't return a book that you haven't borrowed");
         
-        Book storage book = books[_bookId];
+        bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
+        Book storage book = books[encodedName];
         book.copies++;
-        userBooks[hash] = false;
+        userBorrowedBooks[hash] = false;
     }
     
-    function viewBooks() external view returns (Book[] memory) {
-        return books;
+
+    function viewBorrowers(string memory _bookName) external view bookShouldExist(_bookName, true) returns (address[] memory) {
+        bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
+        return books[encodedName].borrowers;
     }
-    
-    function viewBorrowers(uint _bookId) external view returns (address[] memory) {
-        return books[_bookId].borrowers;
+
+    function getBooksCount() external view returns(uint) {
+        return booksIds.length;
     }
     
 }
