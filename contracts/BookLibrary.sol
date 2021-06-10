@@ -6,8 +6,9 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BookLibrary is Ownable {
-    bytes32[] private booksIds;
+    bytes32[] public booksIds;
     mapping(bytes32 => Book) public books;
+
     mapping(bytes32 => bool) private userBorrowedBooks;
     mapping(bytes32 => mapping (address => bool)) private hasUserBorrowedBefore;
 
@@ -73,13 +74,22 @@ contract BookLibrary is Ownable {
     }
     
 
-    function viewBorrowers(string memory _bookName) external view bookShouldExist(_bookName, true) returns (address[] memory) {
+    function getBorrowers(string memory _bookName) external view bookShouldExist(_bookName, true) returns (address[] memory) {
         bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
         return books[encodedName].borrowers;
     }
 
+    function getBook (string memory _bookName) external view bookShouldExist(_bookName, true) returns (Book memory) {
+        bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
+        return books[encodedName];
+    }
+
+    function isBookBorrowedByCurrentUser(string memory _bookName) external view bookShouldExist(_bookName, true) returns(bool) {
+        bytes32 key = keccak256(abi.encodePacked(msg.sender, _bookName));
+        return userBorrowedBooks[key];
+    }
+
     function getBooksCount() external view returns(uint) {
         return booksIds.length;
-    }
-    
+    }  
 }

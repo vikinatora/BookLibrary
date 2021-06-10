@@ -5,7 +5,7 @@ const BookLibrary = require('../build/BookLibrary.json');
 const deploy = async (network, secret, etherscanApiKey) => {
 
 	const deployer = new etherlime.EtherlimeGanacheDeployer();
-	const result = await deployer.deploy(LimeFactory);
+	const result = await deployer.deploy(BookLibrary);
 
 };
 
