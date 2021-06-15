@@ -4,8 +4,14 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./LibraryToken.sol";
+import "./LibWrapper.sol";
 
 contract BookLibrary is Ownable {
+    LIBWrapper public LIBTokenWrapper;
+
+    uint public rentFee = 10000000000000000;
+
     bytes32[] public booksIds;
     mapping(bytes32 => Book) public books;
 
@@ -17,6 +23,10 @@ contract BookLibrary is Ownable {
         uint8 copies;
         address[] borrowers;
         bool exists;
+    }
+
+    constructor() {
+      LIBTokenWrapper = new LIBWrapper();
     }
     
     modifier bookShouldExist(string memory _name, bool shouldExist) {
@@ -53,7 +63,15 @@ contract BookLibrary is Ownable {
         // User shouldn't borrow the same book more than once;
         bytes32 hash = keccak256(abi.encodePacked(msg.sender, _bookName));
         require(userBorrowedBooks[hash] == false, "You've already borrowed the book");
-        
+
+        LibraryToken libToken = LIBTokenWrapper.LIBToken();
+        // Approve rent for transfer
+        // libToken.increaseAllowance(msg.sender, rentFee);
+        // libToken.approve(msg.sender, rentFee);
+
+        // Transfer rent fee
+        libToken.transferFrom(msg.sender, address(this), rentFee);
+
         userBorrowedBooks[hash] = true;
         book.copies--;
         if (hasUserBorrowedBefore[encodedName][msg.sender] == false) {
@@ -92,4 +110,4 @@ contract BookLibrary is Ownable {
     function getBooksCount() external view returns(uint) {
         return booksIds.length;
     }  
-}
+} 
