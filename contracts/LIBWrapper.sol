@@ -32,6 +32,18 @@ contract LIBWrapper is Ownable {
 		emit LogLIBWrapped(msg.sender, msg.value);
 	}
 
+  function wrapWithSignature(bytes32 hashedMessage, uint8 v, bytes32 r, bytes32 s, address receiver) public payable {
+    require(msg.value > 0, "We need to wrap at least 1 wei");
+    require(recoverSigner(hashedMessage, v, r, s) == receiver, "Reciver hasn't signed the message");
+    LIBToken.mint(receiver, msg.value);
+    emit LogLIBWrapped(receiver, msg.value);
+  }
+
+  function recoverSigner(bytes32 hashedMessage, uint8 v, bytes32 r, bytes32 s) internal returns(address) {
+    bytes32 messageDigest = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hashedMessage));
+    return ecrecover(messageDigest, v, r, s);
+  }
+
   function unwrap(uint value) external onlyOwner {
 		require(value > 0, "We need to unwrap at least 1 wei");
 		LIBToken.transferFrom(msg.sender, address(this), value);
