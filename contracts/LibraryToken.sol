@@ -7,6 +7,5 @@ import "@openzeppelin/contracts/presets/ERC20PresetMinterPauser.sol";
 
 contract LibraryToken is ERC20PresetMinterPauser {
   constructor() ERC20PresetMinterPauser("LibraryToken", "LIB") {
-
   }
 }

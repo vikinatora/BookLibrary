@@ -1,12 +1,15 @@
 const etherlime = require('etherlime-lib');
 const BookLibrary = require('../build/BookLibrary.json');
+const LibraryToken = require('../build/LibraryToken.json');
+const LIBWrapper = require("../build/LIBWrapper.json");
 
 
 const deploy = async (network, secret, etherscanApiKey) => {
 
 	const deployer = new etherlime.EtherlimeGanacheDeployer();
-	const result = await deployer.deploy(BookLibrary);
-
+	const libWrapper = await deployer.deploy(LIBWrapper);
+	const libTokenAddress = await libWrapper.LIBToken();
+	await deployer.deploy(BookLibrary, false, libWrapper.contractAddress, libTokenAddress);
 };
 
 module.exports = {

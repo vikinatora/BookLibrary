@@ -6,11 +6,17 @@ import "./LibraryToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LIBWrapper is Ownable {  
+  bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
 	LibraryToken public LIBToken;
+	address public LIBTokenAddress;
 
 	event LogLIBWrapped(address sender, uint256 amount);
 	event LogLIBUnwrapped(address sender, uint256 amount);
+
+  // constructor(address _libTokenAddress) public {
+  //   LIBToken = LibraryToken(_libTokenAddress);s
+  // }
 
   constructor() public {
     LIBToken = new LibraryToken();

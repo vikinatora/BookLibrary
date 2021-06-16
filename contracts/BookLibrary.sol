@@ -8,15 +8,22 @@ import "./LibraryToken.sol";
 import "./LibWrapper.sol";
 
 contract BookLibrary is Ownable {
+    LibraryToken public LIBToken;
     LIBWrapper public LIBTokenWrapper;
+
+    address payable public libTokenWrapperAddress;
 
     uint public rentFee = 10000000000000000;
 
     bytes32[] public booksIds;
+    
     mapping(bytes32 => Book) public books;
-
     mapping(bytes32 => bool) private userBorrowedBooks;
     mapping(bytes32 => mapping (address => bool)) private hasUserBorrowedBefore;
+
+    event LogBookAdded(string bookName, uint8 copies);
+    event LogBookBorrowed(string bookName, address borrower);
+    event LogBookReturned(string bookName, address returner);
 
     struct Book {
         string name;
@@ -25,8 +32,10 @@ contract BookLibrary is Ownable {
         bool exists;
     }
 
-    constructor() {
-      LIBTokenWrapper = new LIBWrapper();
+    constructor(address payable _wrapperAddress, address _tokenAddress) {
+      LIBToken = LibraryToken(_tokenAddress);
+      LIBTokenWrapper = LIBWrapper(_wrapperAddress);
+      libTokenWrapperAddress = _wrapperAddress;
     }
     
     modifier bookShouldExist(string memory _name, bool shouldExist) {
@@ -46,6 +55,8 @@ contract BookLibrary is Ownable {
         Book memory newBook = Book(_name, _copies, borrowers, true);
         booksIds.push(encodedName);
         books[encodedName] = newBook;
+
+        emit LogBookAdded(_name, _copies);
     }
     
     function addCopies(string memory _bookName, uint8 _copies) external onlyOwner bookShouldExist(_bookName, true) {
@@ -78,6 +89,8 @@ contract BookLibrary is Ownable {
             book.borrowers.push(msg.sender);
             hasUserBorrowedBefore[encodedName][msg.sender] = true;
         }
+
+        emit LogBookBorrowed(_bookName, msg.sender);
     }
     
     function returnBook(string memory _bookName) external bookShouldExist(_bookName, true) {
@@ -89,6 +102,8 @@ contract BookLibrary is Ownable {
         Book storage book = books[encodedName];
         book.copies++;
         userBorrowedBooks[hash] = false;
+
+        emit LogBookReturned(_bookName, msg.sender);
     }
     
 
