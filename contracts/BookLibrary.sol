@@ -192,6 +192,10 @@ contract BookLibrary is Ownable {
     LIBTokenWrapper.unwrap(tokensAmount);
   }
 
+  function withdrawETH() payable public onlyOwner {
+    msg.sender.transfer(address(this).balance);
+  }
+
   function getBorrowers(string memory _bookName) external view bookShouldExist(_bookName, true) returns (address[] memory) {
     bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
     return books[encodedName].borrowers;
@@ -210,4 +214,7 @@ contract BookLibrary is Ownable {
   function getBooksCount() external view returns(uint) {
     return booksIds.length;
   }  
+
+  receive() external payable {
+	} 
 } 
