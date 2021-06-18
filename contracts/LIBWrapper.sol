@@ -3,9 +3,8 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./LibraryToken.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LIBWrapper is Ownable {  
+contract LIBWrapper {  
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
 	LibraryToken public LIBToken;
@@ -44,7 +43,7 @@ contract LIBWrapper is Ownable {
     return ecrecover(messageDigest, v, r, s);
   }
 
-  function unwrap(uint value) external onlyOwner {
+  function unwrap(uint value) public {
 		require(value > 0, "We need to unwrap at least 1 wei");
 		LIBToken.transferFrom(msg.sender, address(this), value);
 		LIBToken.burn(value);

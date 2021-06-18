@@ -76,7 +76,6 @@ contract BookLibrary is Ownable {
     require(userBorrowedBooks[hash] == false, "You've already borrowed the book");
 
     LibraryToken libToken = LIBTokenWrapper.LIBToken();
-    // Transfer rent fee
     libToken.transferFrom(msg.sender, address(this), rentFee);
 
     userBorrowedBooks[hash] = true;
@@ -103,7 +102,6 @@ contract BookLibrary is Ownable {
     LibraryToken libToken = LIBTokenWrapper.LIBToken();
 
     libToken.permit(msg.sender, address(this), value, deadline, v,r,s);
-    // Transfer rent fee
     libToken.transferFrom(msg.sender, address(this), rentFee);
 
     userBorrowedBooks[hash] = true;
@@ -172,9 +170,7 @@ contract BookLibrary is Ownable {
     }
 
     emit LogBookBorrowed(_bookName, receiver);
-
   }
-  
   
   function returnBook(string memory _bookName) external bookShouldExist(_bookName, true) {
     //Check if user has borrowed this book;
@@ -189,6 +185,12 @@ contract BookLibrary is Ownable {
     emit LogBookReturned(_bookName, msg.sender);
   }
   
+  function withdrawLibTokens() public onlyOwner {
+    uint256 tokensAmount = LIBToken.balanceOf(address(this));
+    require(tokensAmount > 0, "There are no tokens to withdraw");
+    LIBToken.approve(libTokenWrapperAddress, tokensAmount);
+    LIBTokenWrapper.unwrap(tokensAmount);
+  }
 
   function getBorrowers(string memory _bookName) external view bookShouldExist(_bookName, true) returns (address[] memory) {
     bytes32 encodedName = keccak256(abi.encodePacked(_bookName));
